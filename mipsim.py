@@ -16,6 +16,8 @@ def parse(inputfile):
     mem = {}
     regs = {}
     new_pc = -1
+    
+    counter = {'ifs1':0,'ifs2':0,'ids':0,'exs':0,'mem1':0,'mem2':0,'mem3':0,'wb':0}
     for i in range (0,32):
         regs[str(i)] = 0
     for i in range(0,1000,8):
@@ -143,12 +145,14 @@ def do_sim(mem,regs,ins):
     mem1 = None
     mem2 = None
     mem3 = None
+    delay_ins = None
     wb =  None
     done = False
     bypass = False
     new_pc = -1
     stall = 0
     label_map = {}
+    started = False
     
     #stalin = ('ex':0,'id':0,'ifs2':0, 'ifs1':0)
 
@@ -159,9 +163,10 @@ def do_sim(mem,regs,ins):
             pass
 
 
-    ifs1= ins[0]
+   
 
-    while wb is not None or mem1 is not None or mem2 is not None or mem3 is not None or exs is not None or ids is not None or ifs2 is not None or ifs1 is not None:
+    while wb is not None or mem1 is not None or mem2 is not None or mem3 is not None or exs is not None or ids is not None or ifs2 is not None or ifs1 is not None or not started:
+        started = True
         returnable  =  returnable + 'c#'+ str(clock)+' '
 
         """ Writeback Stage """
@@ -216,22 +221,27 @@ def do_sim(mem,regs,ins):
                 elif exs.iOp == 'BNEZ':
                     if(stalled(exs.rt,mem1,mem2) or stalled(exs.rs,mem1,mem2)):
                         stall =  1
-                    rs_num = int(regs[str(exs.rd)])
-                    if (rs_num != 0):
+                    else:
+                        
+                        rs_num = int(regs[str(exs.rd)])
+                        if (rs_num != 0):
 
                         #Handle Branch
-                        new_pc =  label_map[str(exs.rs)]
+                            new_pc =  label_map[str(exs.rs)]
                         #Flush Pipeline
-                        ids = None
-                        ifs2 = None
-                        ifs1 = None
+                        #TODO: Find a better way to flush on the spot
+                        
+                           # ids = None
+                            #ifs2 = None
+                            #ifs1 = None
                         #Set pc to new pc
-                        pc = new_pc
-                        bypass =True
+                            pc = new_pc
+                            bypass = True
                         
                    
-                    else:
-                        bypass = False
+                        else:
+                            #bypass = False
+                            pass
                 
                 if(exs):
                     if (stall > 0):
@@ -245,7 +255,9 @@ def do_sim(mem,regs,ins):
         if(ids):
             if(stall > 0):
                 returnable = returnable + 'I'+ str(ins.index(ids)+1) + '-stall '
-                pass
+            elif(bypass):
+                returnable = returnable + 'I' + str(ins.index(ids)+1) + '-ID '
+                ids = None
             else:
                 returnable = returnable + 'I' + str(ins.index(ids)+1) + '-ID '
 
@@ -255,18 +267,25 @@ def do_sim(mem,regs,ins):
             
             if(stall > 0):
                 returnable = returnable + 'I'+str(ins.index(ifs2)+1) + '-stall '
-            
+            elif(bypass):
+                returnable = returnable + 'I' + str(ins.index(ifs2)+1) + '-IF2 '
+                ifs2 = None
             else:
                 returnable = returnable + 'I' + str(ins.index(ifs2)+1) + '-IF2 '
        
       
-        
-        if(pc < len(ins)):
+        """
+        if(pc < len(ins) and  stall == 0):
+            
+            #FIXME: This happens even if a stall is supposed to be here
             ifs1 = ins[pc]
         
          
             new_pc = -1
    
+        elif (stall > 0 and pc < len(ins)):
+            delay_inst = ins[pc]
+            ifs1 = None
         else:
             ifs1 = None
             
@@ -283,13 +302,39 @@ def do_sim(mem,regs,ins):
             if(stall > 0):  
                 returnable = returnable + 'I' + str(ins.index(ifs1)+1) + '-stall '
                 
-            else:
+            elif(not bypass):
                 returnable = returnable + 'I' + str(ins.index(ifs1)+1) + '-IF1 '
+            elif(bypass):
+               pass
         else:
             pass     
         
+        """
+       
+        if(stall > 0):
 
-
+            if(ifs1 == None):
+                
+                returnable = returnable + 'I' + str(pc+1) + '-stall '
+                pass
+               
+        elif(bypass):
+            ifs1 = None
+            bypass = False
+            if(ifs1):
+                returnable = returnable + 'I' + str(pc+1) + '-IF1 '
+               
+                bypass = False
+                new_pc = -1
+        else:
+            if(pc < len(ins)):
+                ifs1 = ins[pc]
+                returnable = returnable + 'I' + str(pc+1) + '-IF1 '
+                pc = pc + 1
+                
+            else:
+                ifs1 = None
+                
 
 
         """ Stall checks and insertion of them """
@@ -302,17 +347,24 @@ def do_sim(mem,regs,ins):
         
         mem1 = None
         
+        
         if(stall == 0):
             mem1 = exs
-           
+            
             exs  = ids
             ids  = ifs2
             ifs2 = ifs1
-
+        """
+        if(delay_ins):
+            ifs1 = delay_ins
+            delay_ins = None
+        """
+        
+            
         #stall = 0
         returnable =  returnable + '\n'
-        clock = clock +1
-        bypass = False
+        clock = clock + 1
+        
     return returnable,regs,mem
 
 
@@ -323,15 +375,16 @@ def main():
     res,regs2,mem2= do_sim(mem,regs,ins)
 
     print res
-
+    
+    print "REGISTERS"
     for key in sorted(regs2.iterkeys()):
         if(regs2[key] != 0):
             print "R%s %s" % (key,str( regs2[key]))
 
     print "MEMORY"
-    for key in sorted(mem2.iterkeys()):
+    for key in sorted(mem2.iterkeys(), reverse=True):
         if(mem2[key] != 0):
-            print "R%s %s" % (key,str( mem2[key]))
+            print "%s %s" % (key,str( mem2[key]))
 
 if __name__ == "__main__":
     main();
