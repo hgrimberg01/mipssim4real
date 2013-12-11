@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+
 class instruction():
     iOp='DADD'
     iLabel=None
@@ -17,7 +19,7 @@ def parse(inputfile):
     regs = {}
     new_pc = -1
     
-    counter = {'ifs1':0,'ifs2':0,'ids':0,'exs':0,'mem1':0,'mem2':0,'mem3':0,'wb':0}
+
     for i in range (0,32):
         regs[str(i)] = 0
     for i in range(0,1000,8):
@@ -118,6 +120,8 @@ def parse(inputfile):
 
 def inquire_user():
 
+    in_file = raw_input('Enter an input file name: ')
+    out_file = raw_input('Enter an output file name: ')
 
     return in_file, out_file
 
@@ -153,7 +157,7 @@ def do_sim(mem,regs,ins):
     stall = 0
     label_map = {}
     started = False
-    
+    counter = {'ifs1':1,'ifs2':0,'ids':0,'exs':0,'mem1':0,'mem2':0,'mem3':0,'wb':0}
     #stalin = ('ex':0,'id':0,'ifs2':0, 'ifs1':0)
 
     for idx, i in enumerate(ins):
@@ -171,12 +175,12 @@ def do_sim(mem,regs,ins):
 
         """ Writeback Stage """
         if (wb):
-            returnable = returnable + 'I' + str(ins.index(wb)+1) + '-WB '
+            returnable = returnable + 'I' + str(counter['wb']) + '-WB '
 
         """ Mem3 Stage """
         if(mem3):
 
-            returnable = returnable + 'I' + str(ins.index(mem3)+1) + '-MEM3 '
+            returnable = returnable + 'I' + str(counter['mem3']) + '-MEM3 '
         """ Mem2 Stage """
         if(mem2):
 
@@ -189,12 +193,12 @@ def do_sim(mem,regs,ins):
                 regs[str(mem2.rd)] = mem[final_mem]
             
             
-            returnable = returnable + 'I' + str(ins.index(mem2)+1) + '-MEM2 '
+            returnable = returnable + 'I' + str(counter['mem2']) + '-MEM2 '
 
         """ Mem1 Stage """
         if(mem1):
             if(stall == 0):
-                returnable = returnable + 'I' + str(ins.index(mem1)+1) + '-MEM1 '
+                returnable = returnable + 'I' + str(counter['mem1']) + '-MEM1 '
 
           
         """ Exec Stage """
@@ -245,33 +249,33 @@ def do_sim(mem,regs,ins):
                 
                 if(exs):
                     if (stall > 0):
-                        returnable = returnable + 'I'+str(ins.index(exs)+1) + '-stall '
+                        returnable = returnable + 'I'+str(counter['exs']) + '-stall '
                         pass
                     else:
-                        returnable = returnable + 'I' +str(ins.index(exs)+1) + '-EX '
+                        returnable = returnable + 'I' +str(counter['exs']) + '-EX '
 
 
         """ Decode Stage """
         if(ids):
             if(stall > 0):
-                returnable = returnable + 'I'+ str(ins.index(ids)+1) + '-stall '
+                returnable = returnable + 'I'+ str(counter['ids']) + '-stall '
             elif(bypass):
-                returnable = returnable + 'I' + str(ins.index(ids)+1) + '-ID '
+                returnable = returnable + 'I' + str(counter['ids']) + '-ID '
                 ids = None
             else:
-                returnable = returnable + 'I' + str(ins.index(ids)+1) + '-ID '
+                returnable = returnable + 'I' + str(counter['ids']) + '-ID '
 
         """ Fetch2 Stage """
    
         if(ifs2):
             
             if(stall > 0):
-                returnable = returnable + 'I'+str(ins.index(ifs2)+1) + '-stall '
+                returnable = returnable + 'I'+str(counter['ifs2']) + '-stall '
             elif(bypass):
-                returnable = returnable + 'I' + str(ins.index(ifs2)+1) + '-IF2 '
+                returnable = returnable + 'I' + str(counter['ifs2']) + '-IF2 '
                 ifs2 = None
             else:
-                returnable = returnable + 'I' + str(ins.index(ifs2)+1) + '-IF2 '
+                returnable = returnable + 'I' + str(counter['ifs2']) + '-IF2 '
        
       
         """
@@ -315,21 +319,22 @@ def do_sim(mem,regs,ins):
 
             if(ifs1 == None):
                 
-                returnable = returnable + 'I' + str(pc+1) + '-stall '
+                returnable = returnable + 'I' + str(counter['ifs1']) + '-stall '
                 pass
                
         elif(bypass):
             ifs1 = None
-            bypass = False
+       
+            #bypass = False
             if(ifs1):
-                returnable = returnable + 'I' + str(pc+1) + '-IF1 '
+                returnable = returnable + 'I' + str(counter['ifs1']) + '-IF1 '
                
-                bypass = False
+                #bypass = False
                 new_pc = -1
         else:
             if(pc < len(ins)):
                 ifs1 = ins[pc]
-                returnable = returnable + 'I' + str(pc+1) + '-IF1 '
+                returnable = returnable + 'I' + str(counter['ifs1']) + '-IF1 '
                 pc = pc + 1
                 
             else:
@@ -342,49 +347,75 @@ def do_sim(mem,regs,ins):
 
    
         wb   = mem3
+        counter['wb']=counter['mem3']
         mem3 = mem2
+        counter['mem3']=counter['mem2']
         mem2 = mem1
-        
+        counter['mem2']=counter['mem1']
         mem1 = None
         
         
         if(stall == 0):
             mem1 = exs
-            
+            counter['mem1']=counter['exs']
             exs  = ids
+            counter['exs']=counter['ids']
             ids  = ifs2
+            counter['ids']=counter['ifs2']
             ifs2 = ifs1
-        """
-        if(delay_ins):
-            ifs1 = delay_ins
-            delay_ins = None
-        """
-        
-            
-        #stall = 0
+            counter['ifs2']=counter['ifs1']
+   
+        if(stall >0):
+            pass
+        elif(bypass):
+               bypass = False
+        elif(stall == 0):
+            counter['ifs1'] = counter['ifs1']+1
+       
         returnable =  returnable + '\n'
         clock = clock + 1
-        
+       
     return returnable,regs,mem
 
 
 def main():
-    f = open('input.txt','r')
-    mem,regs,ins = parse(f)
-
-    res,regs2,mem2= do_sim(mem,regs,ins)
-
-    print res
+    print 'MIPSIM PROJECT'
+    print 'Copyright 2013 - Howard Grimberg'
+    print 'Licensed under the MIT License'
+    print 'See LICENSE.txt for Details\n'
+    print 'INTERACTIVE MODE'
     
-    print "REGISTERS"
-    for key in sorted(regs2.iterkeys()):
-        if(regs2[key] != 0):
-            print "R%s %s" % (key,str( regs2[key]))
+    done =  False
+    
+    while not done:
+        inf,outf = inquire_user()
+    
+        finf = open(inf,'r')
+        mem,regs,ins = parse(finf)
+        finf.close()
 
-    print "MEMORY"
-    for key in sorted(mem2.iterkeys(), reverse=True):
-        if(mem2[key] != 0):
-            print "%s %s" % (key,str( mem2[key]))
+        res,regs2,mem2= do_sim(mem,regs,ins)
+        f = open(outf,'w')
+    
+        f.write(res+'\n')
+    
+        f.write("REGISTERS\n")
+        
+        for key in sorted(regs2.iterkeys()):
+            if(regs2[key] != 0):
+                f.write( "R%s %s \n" % (key,str( regs2[key])))
+
+                f.write("MEMORY\n")
+        for key in sorted(mem2.iterkeys(), reverse=True):
+            if(mem2[key] != 0):
+                f.write( "%s %s \n" % (key,str( mem2[key])))
+    
+        f.close()
+                
+        exit = raw_input('Exit? (y/n) [n]: ')
+        if(exit.lower() == 'y'):
+            done = True
+    
 
 if __name__ == "__main__":
     main();
