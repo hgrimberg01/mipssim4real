@@ -2,14 +2,14 @@
 
 
 class instruction():
-    iOp='DADD'
-    iLabel=None
+    iOp = 'DADD'
+    iLabel = None
     iOffset = 0
     rd = 0
     rs = 0
     rt = 0
     def __str__(self):
-        return '%s    %s %s,%s,%s' % (self.iLabel,self.iOp,self.rd,self.rs,self.rt)
+        return '%s    %s %s,%s,%s' % (self.iLabel, self.iOp, self.rd, self.rs, self.rt)
 
 
 
@@ -20,12 +20,12 @@ def parse(inputfile):
     new_pc = -1
     
 
-    for i in range (0,32):
+    for i in range (0, 32):
         regs[str(i)] = 0
-    for i in range(0,1000,8):
+    for i in range(0, 1000, 8):
         mem[str(i)] = 0
 
-    insts =  []
+    insts = []
     state = 'r';
     for line in inputfile:
         line = line.strip()
@@ -42,7 +42,7 @@ def parse(inputfile):
                 line = line.strip()
                 rs = line.split()
                 rn = rs[0][1:]
-                val =  rs[1]
+                val = rs[1]
                 regs[rn] = val
             elif state == 'm':
                 line = line.strip()
@@ -61,15 +61,15 @@ def parse(inputfile):
 
                 if line.find('BNEZ') > -1:
                     line = line.strip()
-                    ppre = line.split(' ',1)
-                    rds =  [x.strip() for x in ppre[1].split(',')]
+                    ppre = line.split(' ', 1)
+                    rds = [x.strip() for x in ppre[1].split(',')]
                     nIns.rd = rds[0][1:]
                     nIns.iOp = 'BNEZ'
                     nIns.rs = rds[1][0:]
                     nIns.iType = 'b'
                 elif line.find('#') > -1:
                     line = line.strip()
-                    ins = line.split(' ',1)
+                    ins = line.split(' ', 1)
                     nIns.iOp = ins[0].strip()
                     rds = [x.strip() for x in ins[1].split(',')]
                     nIns.rd = rds[0][1:]
@@ -84,29 +84,29 @@ def parse(inputfile):
                     rgx = '/\(([^)]+)\)/'
 
 
-                    l= rds[1].find('(')
-                    r =rds[1].find(')')
+                    l = rds[1].find('(')
+                    r = rds[1].find(')')
 
                     if(nIns.iOp == 'SD'):
-                        nIns.rd = rds[1][l+1:r][1:]
-                        nIns.rs =  rds[0][1:]
+                        nIns.rd = rds[1][l + 1:r][1:]
+                        nIns.rs = rds[0][1:]
                     elif(nIns.iOp == 'LD'):
 
-                        nIns.rs = rds[1][l+1:r][1:]
+                        nIns.rs = rds[1][l + 1:r][1:]
                         nIns.rd = rds[0][1:]
                     else:
                         pass
 
-                    l= rds[1].find('(')
+                    l = rds[1].find('(')
 
-                    nIns.iOffset =  rds[1][:l]
+                    nIns.iOffset = rds[1][:l]
 
                     nIns.iType = 'm'
                 else:
                     line = line.strip()
-                    ins = line.split(' ',1)
+                    ins = line.split(' ', 1)
                     nIns.iOp = ins[0].strip()
-                    rds =[x.strip() for x in  ins[1].split(',')]
+                    rds = [x.strip() for x in  ins[1].split(',')]
 
                     nIns.rd = rds[0][1:]
                     nIns.rs = rds[1][1:]
@@ -114,7 +114,7 @@ def parse(inputfile):
                     nIns.iType = 'r'
                 insts.append(nIns)
 
-    return mem,regs,insts
+    return mem, regs, insts
 
 
 
@@ -131,34 +131,34 @@ def  stalled(rn, mem1, mem2):
         if (mem1.iOp == 'LD' and mem1.rd == rn):
             return True
     if(mem2):
-        if( mem2.iOp == 'LD' and mem2.rd ==rn ):
+        if(mem2.iOp == 'LD' and mem2.rd == rn):
             return True
 
     return False
 
 
 
-def do_sim(mem,regs,ins):
+def do_sim(mem, regs, ins):
     clock = 1
     pc = 0
     returnable = ""
     ifs1 = None
     ifs2 = None
-    ids  = None
-    exs  = None
+    ids = None
+    exs = None
     mem1 = None
     mem2 = None
     mem3 = None
     delay_ins = None
-    wb =  None
+    wb = None
     done = False
     bypass = False
     new_pc = -1
     stall = 0
     label_map = {}
     started = False
-    counter = {'ifs1':1,'ifs2':0,'ids':0,'exs':0,'mem1':0,'mem2':0,'mem3':0,'wb':0}
-    #stalin = ('ex':0,'id':0,'ifs2':0, 'ifs1':0)
+    counter = {'ifs1':1, 'ifs2':0, 'ids':0, 'exs':0, 'mem1':0, 'mem2':0, 'mem3':0, 'wb':0}
+    # stalin = ('ex':0,'id':0,'ifs2':0, 'ifs1':0)
 
     for idx, i in enumerate(ins):
         if i.iType != 'b' and i.iLabel != None:
@@ -171,7 +171,7 @@ def do_sim(mem,regs,ins):
 
     while wb is not None or mem1 is not None or mem2 is not None or mem3 is not None or exs is not None or ids is not None or ifs2 is not None or ifs1 is not None or not started:
         started = True
-        returnable  =  returnable + 'c#'+ str(clock)+' '
+        returnable = returnable + 'c#' + str(clock) + ' '
 
         """ Writeback Stage """
         if (wb):
@@ -185,10 +185,10 @@ def do_sim(mem,regs,ins):
         if(mem2):
 
             if mem2.iOp == 'SD':
-                final_mem =  str(int(regs[str(mem2.rd)]) +int( mem2.iOffset))
-                mem[str(final_mem)] =   regs[str(mem2.rs)]
+                final_mem = str(int(regs[str(mem2.rd)]) + int(mem2.iOffset))
+                mem[str(final_mem)] = regs[str(mem2.rs)]
             elif mem2.iOp == 'LD':
-                final_mem = str(int(regs[str(mem2.rs)]) +int( mem2.iOffset))
+                final_mem = str(int(regs[str(mem2.rs)]) + int(mem2.iOffset))
 
                 regs[str(mem2.rd)] = mem[final_mem]
             
@@ -204,61 +204,66 @@ def do_sim(mem,regs,ins):
         """ Exec Stage """
         if(exs):
             stall = 0
-            if(stalled(exs.rt,mem1,mem2) and stalled(exs.rs,mem1,mem2) and False):
-                stall =  1
+            if(stalled(exs.rt, mem1, mem2) and stalled(exs.rs, mem1, mem2) and False):
+                stall = 1
                 
             else:
                 if exs.iOp == 'DADD':
-                    if(stalled(exs.rt,mem1,mem2) or stalled(exs.rs,mem1,mem2)):
-                        stall =  1
-                    if exs.iType == 'r':
-                        regs[str(exs.rd)] =   int(regs[exs.rs])+int(regs[exs.rt])
-                    elif exs.iType =='i':
-
-                        regs[str(exs.rd)] =   int(regs[exs.rs])+int(exs.rt)
+                    if(stalled(exs.rt, mem1, mem2) or stalled(exs.rs, mem1, mem2)):
+                        stall = 1
+                    else:
+                        if exs.iType == 'r':
+                            regs[str(exs.rd)] = int(regs[exs.rs]) + int(regs[exs.rt])
+                        elif exs.iType == 'i':
+                            regs[str(exs.rd)] = int(regs[exs.rs]) + int(exs.rt)
+                
+                            
                 elif  exs.iOp == 'SUB':
-                    if exs.iType == 'r':
-                        regs[str(exs.rd)] =   int(regs[exs.rs]) - int(regs[exs.rt])
-                    elif exs.iType =='i':
-
-                        regs[str(exs.rd)] =   int(regs[exs.rs]) - int(exs.rt)
+                    if(stalled(exs.rt, mem1, mem2) or stalled(exs.rs, mem1, mem2)):
+                        stall = 1
+                    else:
+                        if exs.iType == 'r':
+                            regs[str(exs.rd)] = int(regs[exs.rs]) - int(regs[exs.rt])
+                        elif exs.iType == 'i':
+                            regs[str(exs.rd)] = int(regs[exs.rs]) - int(exs.rt)
+                            
                 elif exs.iOp == 'BNEZ':
-                    if(stalled(exs.rt,mem1,mem2) or stalled(exs.rs,mem1,mem2)):
-                        stall =  1
+                    if(stalled(exs.rt, mem1, mem2) or stalled(exs.rs, mem1, mem2)):
+                        stall = 1
                     else:
                         
                         rs_num = int(regs[str(exs.rd)])
                         if (rs_num != 0):
 
-                        #Handle Branch
-                            new_pc =  label_map[str(exs.rs)]
-                        #Flush Pipeline
-                        #TODO: Find a better way to flush on the spot
+                        # Handle Branch
+                            new_pc = label_map[str(exs.rs)]
+                        # Flush Pipeline
+                        # TODO: Find a better way to flush on the spot
                         
                            # ids = None
-                            #ifs2 = None
-                            #ifs1 = None
-                        #Set pc to new pc
+                            # ifs2 = None
+                            # ifs1 = None
+                        # Set pc to new pc
                             pc = new_pc
                             bypass = True
                         
                    
                         else:
-                            #bypass = False
+                            # bypass = False
                             pass
                 
                 if(exs):
                     if (stall > 0):
-                        returnable = returnable + 'I'+str(counter['exs']) + '-stall '
+                        returnable = returnable + 'I' + str(counter['exs']) + '-stall '
                         pass
                     else:
-                        returnable = returnable + 'I' +str(counter['exs']) + '-EX '
+                        returnable = returnable + 'I' + str(counter['exs']) + '-EX '
 
 
         """ Decode Stage """
         if(ids):
             if(stall > 0):
-                returnable = returnable + 'I'+ str(counter['ids']) + '-stall '
+                returnable = returnable + 'I' + str(counter['ids']) + '-stall '
             elif(bypass):
                 returnable = returnable + 'I' + str(counter['ids']) + '-ID '
                 ids = None
@@ -270,7 +275,7 @@ def do_sim(mem,regs,ins):
         if(ifs2):
             
             if(stall > 0):
-                returnable = returnable + 'I'+str(counter['ifs2']) + '-stall '
+                returnable = returnable + 'I' + str(counter['ifs2']) + '-stall '
             elif(bypass):
                 returnable = returnable + 'I' + str(counter['ifs2']) + '-IF2 '
                 ifs2 = None
@@ -278,42 +283,7 @@ def do_sim(mem,regs,ins):
                 returnable = returnable + 'I' + str(counter['ifs2']) + '-IF2 '
        
       
-        """
-        if(pc < len(ins) and  stall == 0):
-            
-            #FIXME: This happens even if a stall is supposed to be here
-            ifs1 = ins[pc]
-        
-         
-            new_pc = -1
-   
-        elif (stall > 0 and pc < len(ins)):
-            delay_inst = ins[pc]
-            ifs1 = None
-        else:
-            ifs1 = None
-            
-     
-            
-        if(stall == 0):
-
-            pc = pc + 1 
-           
-            
-  
-        
-        if(ifs1 != None):
-            if(stall > 0):  
-                returnable = returnable + 'I' + str(ins.index(ifs1)+1) + '-stall '
-                
-            elif(not bypass):
-                returnable = returnable + 'I' + str(ins.index(ifs1)+1) + '-IF1 '
-            elif(bypass):
-               pass
-        else:
-            pass     
-        
-        """
+ 
        
         if(stall > 0):
 
@@ -325,11 +295,11 @@ def do_sim(mem,regs,ins):
         elif(bypass):
             ifs1 = None
        
-            #bypass = False
+            # bypass = False
             if(ifs1):
                 returnable = returnable + 'I' + str(counter['ifs1']) + '-IF1 '
                
-                #bypass = False
+                # bypass = False
                 new_pc = -1
         else:
             if(pc < len(ins)):
@@ -346,36 +316,36 @@ def do_sim(mem,regs,ins):
 
 
    
-        wb   = mem3
-        counter['wb']=counter['mem3']
+        wb = mem3
+        counter['wb'] = counter['mem3']
         mem3 = mem2
-        counter['mem3']=counter['mem2']
+        counter['mem3'] = counter['mem2']
         mem2 = mem1
-        counter['mem2']=counter['mem1']
+        counter['mem2'] = counter['mem1']
         mem1 = None
         
         
         if(stall == 0):
             mem1 = exs
-            counter['mem1']=counter['exs']
-            exs  = ids
-            counter['exs']=counter['ids']
-            ids  = ifs2
-            counter['ids']=counter['ifs2']
+            counter['mem1'] = counter['exs']
+            exs = ids
+            counter['exs'] = counter['ids']
+            ids = ifs2
+            counter['ids'] = counter['ifs2']
             ifs2 = ifs1
-            counter['ifs2']=counter['ifs1']
+            counter['ifs2'] = counter['ifs1']
    
-        if(stall >0):
+        if(stall > 0):
             pass
         elif(bypass):
                bypass = False
         elif(stall == 0):
-            counter['ifs1'] = counter['ifs1']+1
+            counter['ifs1'] = counter['ifs1'] + 1
        
-        returnable =  returnable + '\n'
+        returnable = returnable + '\n'
         clock = clock + 1
        
-    return returnable,regs,mem
+    return returnable, regs, mem
 
 
 def main():
@@ -385,30 +355,33 @@ def main():
     print 'See LICENSE.txt for Details\n'
     print 'INTERACTIVE MODE'
     
-    done =  False
+    done = False
     
     while not done:
-        inf,outf = inquire_user()
+        inf, outf = inquire_user()
     
-        finf = open(inf,'r')
-        mem,regs,ins = parse(finf)
+        finf = open(inf, 'r')
+        mem, regs, ins = parse(finf)
         finf.close()
 
-        res,regs2,mem2= do_sim(mem,regs,ins)
-        f = open(outf,'w')
+        res, regs2, mem2 = do_sim(mem, regs, ins)
+        f = open(outf, 'w')
     
-        f.write(res+'\n')
+        f.write(res + '\n')
     
         f.write("REGISTERS\n")
         
-        for key in sorted(regs2.iterkeys()):
-            if(regs2[key] != 0):
-                f.write( "R%s %s \n" % (key,str( regs2[key])))
-
+        ksr = [int(x) for x in  regs2.iterkeys() ]
+        for key in sorted(ksr):
+            if(regs2[str(key)] != 0):
+                f.write("R%s %s \n" % (key, str(regs2[str(key)])))
+        ksm = [int(x) for x in  mem2.iterkeys() ]
+        
+        
         f.write("MEMORY\n")
-        for key in sorted(mem2.iterkeys(), reverse=True):
-            if(mem2[key] != 0):
-                f.write( "%s %s \n" % (key,str( mem2[key])))
+        for key in sorted(ksm):
+            if(mem2[str(key)] != 0):
+                f.write("%s %s \n" % (key, str(mem2[str(key)])))
     
         f.close()
                 
