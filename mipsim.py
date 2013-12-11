@@ -318,9 +318,9 @@ def do_sim(mem,regs,ins):
         if(stall > 0):
 
             if(ifs1 == None):
+                if(pc < len(ins)):
+                    returnable = returnable + 'I' + str(counter['ifs1']) + '-stall '
                 
-                returnable = returnable + 'I' + str(counter['ifs1']) + '-stall '
-                pass
                
         elif(bypass):
             ifs1 = None
