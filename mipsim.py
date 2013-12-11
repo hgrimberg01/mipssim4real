@@ -405,7 +405,7 @@ def main():
             if(regs2[key] != 0):
                 f.write( "R%s %s \n" % (key,str( regs2[key])))
 
-                f.write("MEMORY\n")
+        f.write("MEMORY\n")
         for key in sorted(mem2.iterkeys(), reverse=True):
             if(mem2[key] != 0):
                 f.write( "%s %s \n" % (key,str( mem2[key])))
