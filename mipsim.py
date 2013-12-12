@@ -59,27 +59,44 @@ def parse(inputfile):
         elif line == 'CODE':
             state = 'c'
         else:
+            # Depending what state we are in,
+            # process the text file appropriately
             if state == 'r':
+                # Remove extra whitespace from the line
                 line = line.strip()
+
+                # Split on space
                 rs = line.split()
+
+                # First entry in array(from) slit, everything
+                # past the first character is a reg. number
                 rn = rs[0][1:]
                 val = rs[1]
                 regs[rn] = val
             elif state == 'm':
+
+                # Same basic idea for memory
                 line = line.strip()
                 ms = line.split()
                 mn = ms[0]
                 mv = ms[1]
                 mem[mn] = mv
             elif state == 'c':
+
+                # Make an  empty instruction
                 nIns = instruction()
+
+                # Does it have a label?
                 if line.find(':') > -1:
+                    #Grab the label and put it in the instruction
                     sp = line.split(':')
+                    # Remove the label, clean the line and put it back
+                    # for further processing (as normal)
                     line = sp[1].strip()
                     nIns.iLabel = sp[0].strip()
                 else:
                     pass
-
+                # Branch Parsing
                 if line.find('BNEZ') > -1:
                     line = line.strip()
                     ppre = line.split(' ', 1)
@@ -138,7 +155,7 @@ def parse(inputfile):
     return mem, regs, insts
 
 
-
+# Ask user for information
 def inquire_user():
 
     in_file = raw_input('Enter an input file name: ')
@@ -147,6 +164,8 @@ def inquire_user():
     return in_file, out_file
 
 
+# Given instructions in memory stages 1 and 2 and a register
+# check if there may be a hazard
 def  stalled(rn, mem1, mem2):
     if(mem1):
         if (mem1.iOp == 'LD' and mem1.rd == rn):
@@ -285,6 +304,7 @@ def do_sim(mem, regs, ins):
                         # Check what the instruction type is
                         if exs.iType == 'r':
                             regs[str(exs.rd)] = int(regs[exs.rs]) + int(regs[exs.rt])
+                        # Immediate Instruction ? Why yes it is!
                         elif exs.iType == 'i':
                             regs[str(exs.rd)] = int(regs[exs.rs]) + int(exs.rt)
 
@@ -307,10 +327,12 @@ def do_sim(mem, regs, ins):
                         rs_num = int(regs[str(exs.rd)])
                         if (rs_num != 0):
 
-
+                            # Find New PC
                             new_pc = label_map[str(exs.rs)]
-
+                            # Set PC
                             pc = new_pc
+
+                            # FLUSH EVERYTHING!!
                             bypass = True
                         else:
                             pass
@@ -322,6 +344,7 @@ def do_sim(mem, regs, ins):
                         returnable = returnable + 'I' + str(counter['exs']) + '-stall '
                         pass
                     else:
+                        # Behave as normal
                         returnable = returnable + 'I' + str(counter['exs']) + '-EX '
 
 
