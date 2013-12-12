@@ -50,8 +50,8 @@ def parse(inputfile):
         line = line.strip()
 
         # Determine what part of the input file we are reading and  set the state
-        if line == "\n":
-            state = 'empty'
+        if line == "" or line.isspace():
+            pass
         elif line == "REGISTERS":
             state = 'r'
         elif line == 'MEMORY':
@@ -350,6 +350,7 @@ def do_sim(mem, regs, ins):
 
         # Decode Stage
         if(ids):
+            print ids
             # Check for stall
             if(stall > 0):
                 returnable = returnable + 'I' + str(counter['ids']) + '-stall '
