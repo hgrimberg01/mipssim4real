@@ -350,7 +350,6 @@ def do_sim(mem, regs, ins):
 
         # Decode Stage
         if(ids):
-            print ids
             # Check for stall
             if(stall > 0):
                 returnable = returnable + 'I' + str(counter['ids']) + '-stall '
